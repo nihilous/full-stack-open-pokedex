@@ -70,7 +70,7 @@ module.exports = defineConfig({
     // },
   ],
   webServer: {
-    command: 'npm start',
+    command: 'npm run start-prod',
     port: 5001,
     reuseExistingServer: !process.env.CI,
   },
