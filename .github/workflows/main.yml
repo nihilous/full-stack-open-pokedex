@@ -29,11 +29,6 @@ jobs:
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
 
-      - name: Start the application
-        run: npm run start-prod &
-        env:
-          PORT: 3000
-
       - name: Run Playwright tests
         run: npm run test:e2e
 
