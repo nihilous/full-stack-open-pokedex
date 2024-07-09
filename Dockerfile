@@ -5,13 +5,16 @@ FROM node:20 as build
 WORKDIR /app
 
 # Copy application files
-COPY . .
+COPY package*.json ./
 
 # Install dependencies
 RUN npm install
 
+# Copy the rest of the application files
+COPY . .
+
 # Build the application (if there is a build step)
-# RUN npm run build
+RUN npm run build
 
 # Use the official Node.js image for the runtime
 FROM node:20-slim
@@ -23,7 +26,7 @@ WORKDIR /app
 COPY --from=build /app /app
 
 # Expose the port the app runs on
-EXPOSE 5001
+EXPOSE 3000
 
 # Run the application
 CMD ["npm", "run", "start-prod"]
