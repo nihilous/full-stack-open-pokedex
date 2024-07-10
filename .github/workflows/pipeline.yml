@@ -10,17 +10,14 @@ on:
     types:
       [ opened, synchronize, closed ]
 
-
+env:
+  SKIP: ${{ github.event.commits.*.message }}
 
 jobs:
   simple_deployment_pipeline:
     runs-on: ubuntu-20.04
-    env:
-      SKIP: ${{ contains(join(github.event.commits.*.message, ' '), '#skip') }}
-      COMMIT_MESSAGE: ${{ github.event.commits.*.message }}
     outputs:
       SKIP: ${{ env.SKIP }}
-      COMMIT_MESSAGE: ${{ env.COMMIT_MESSAGE }}
     steps:
       - name: Say hello
         run: echo "Hello World!"
@@ -55,8 +52,6 @@ jobs:
       - uses: superfly/flyctl-actions/setup-flyctl@master
       - name: Check SKIP value before deploy
         run: echo "SKIP value is ${{ env.SKIP }}"
-      - name: Check COMMIT_MESSAGE value before deploy
-        run: echo "COMMIT_MESSAGE value is ${{ env.COMMIT_MESSAGE }}"
       - name: Deploy to Fly.io
         if: ${{ github.event_name == 'push' && env.SKIP == 'false' }}
         run: flyctl deploy --remote-only
@@ -72,9 +67,6 @@ jobs:
     steps:
       - name: Check SKIP value before tag release
         run: echo "SKIP value is ${{ needs.simple_deployment_pipeline.outputs.SKIP }}"
-      - name: Check COMMIT_MESSAGE value before tag release
-        run: echo "COMMIT_MESSAGE value is ${{ needs.simple_deployment_pipeline.outputs.COMMIT_MESSAGE }}"
-
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.merge_commit_sha }}
