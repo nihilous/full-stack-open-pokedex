@@ -10,14 +10,14 @@ on:
     types:
       [ opened, synchronize, closed ]
 
-env:
-  SKIP: ${{ contains(join(github.event.commits.*.message, ' '), '#skip') }}
+
 
 jobs:
   simple_deployment_pipeline:
     runs-on: ubuntu-20.04
-    outputs:
-      SKIP: ${{ env.SKIP }}
+    env:
+      SKIP: ${{ contains(join(github.event.commits.*.message, ' '), '#skip') }}
+    run: echo "$SKIP"
     steps:
       - name: Say hello
         run: |
