@@ -10,11 +10,14 @@ on:
     types:
       [ opened, synchronize, closed ]
 
+env:
+  SKIP: ${{ contains(join(github.event.commits.*.message, ' '), '#skip') }}
+
 jobs:
   simple_deployment_pipeline:
     runs-on: ubuntu-20.04
     outputs:
-      SKIP: ${{ steps.set-skip.outputs.SKIP }}
+      SKIP: ${{ env.SKIP }}
     steps:
       - name: Say hello
         run: |
@@ -41,17 +44,6 @@ jobs:
         run: npx playwright install --with-deps
       - name: Run Playwright tests
         run: npm run test:e2e
-      - name: Set skip output
-        id: set-skip
-        run: |
-          COMMIT_MESSAGES=$(echo "${{ toJson(github.event.commits.*.message) }}")
-          if echo "$COMMIT_MESSAGES" | grep -q "#skip"; then
-            echo "SKIP=true" >> $GITHUB_ENV
-            echo "SKIP=true" >> $GITHUB_OUTPUT
-          else
-            echo "SKIP=false" >> $GITHUB_ENV
-            echo "SKIP=false" >> $GITHUB_OUTPUT
-          fi
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
@@ -60,14 +52,14 @@ jobs:
           retention-days: 30
       - uses: superfly/flyctl-actions/setup-flyctl@master
       - name: Deploy to Fly.io
-        if: ${{ github.event_name == 'push' && steps.set-skip.outputs.SKIP == 'false' }}
+        if: ${{ github.event_name == 'push' && env.SKIP == 'false' }}
         run: flyctl deploy --remote-only
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
   tag_release:
     needs: [simple_deployment_pipeline]
-    if: ${{ github.event.pull_request.merged == true && needs.simple_deployment_pipeline.outputs.SKIP == 'false' }}
+    if: ${{ github.event.pull_request.merged == true && env.SKIP == 'false' }}
     runs-on: ubuntu-20.04
     permissions:
       contents: write
