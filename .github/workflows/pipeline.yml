@@ -6,7 +6,7 @@ on:
       - main
   pull_request:
     branches:
-      [ main ]
+      - main
     types:
       [ opened, synchronize, closed ]
 
@@ -14,11 +14,6 @@ jobs:
   simple_deployment_pipeline:
     runs-on: ubuntu-20.04
     steps:
-      - name: commit messages
-        env:
-          COMMIT_MESSAGES: ${{ contains(join(github.event.commits.*.message, ' '), '#skip') }}
-        run: echo "$COMMIT_MESSAGES"
-
       - name: Say hello
         run: |
           echo "Hello World!"
@@ -30,6 +25,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - name: commit messages
+        env:
+          COMMIT_MESSAGES: ${{ contains(join(github.event.commits.*.message, ' '), '#skip') }}
+        run: echo "$COMMIT_MESSAGES"
       - name: Install dependencies
         run: npm install
       - name: Lint
