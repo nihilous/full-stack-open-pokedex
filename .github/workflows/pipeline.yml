@@ -5,8 +5,13 @@ on:
     branches:
       - main
   pull_request:
-    branches: [ main ]
-    types: [ opened, synchronize, closed ]
+    branches:
+      [ main ]
+    types:
+      [ opened, synchronize, closed ]
+
+env:
+  SKIP: ${{ contains(join(github.event.commits.*.message, ' '), '#skip') }}
 
 jobs:
   simple_deployment_pipeline:
@@ -23,17 +28,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Set COMMIT_MESSAGES environment variable
-        id: set-commit-messages
-        run: echo "COMMIT_MESSAGES=$(echo '${{ toJson(github.event.commits.*.message) }}' | jq -r '. | join(\" \")')" >> $GITHUB_ENV
-      - name: Check if commit message contains #skip
-        id: check_skip
-        run: |
-          if contains("${COMMIT_MESSAGES}", "#skip"); then
-            echo "skip=true" >> $GITHUB_ENV
-          else
-            echo "skip=false" >> $GITHUB_ENV
-          fi
       - name: Install dependencies
         run: npm install
       - name: Lint
@@ -55,7 +49,7 @@ jobs:
           path: playwright-report/
           retention-days: 30
       - name: Deploy to Fly.io
-        if: ${{ github.event_name == 'push' && env.skip == 'false' }}
+        if: ${{ github.event_name == 'push' && env.SKIP == 'false' }}
         uses: superfly/flyctl-actions/setup-flyctl@master
         with:
           args: deploy --remote-only
@@ -64,7 +58,7 @@ jobs:
 
   tag_release:
     needs: [simple_deployment_pipeline]
-    if: ${{ github.event.pull_request.merged == true && env.skip == 'false' }}
+    if: ${{ github.event.pull_request.merged == true && env.SKIP == 'false' }}
     runs-on: ubuntu-20.04
     permissions:
       contents: write
