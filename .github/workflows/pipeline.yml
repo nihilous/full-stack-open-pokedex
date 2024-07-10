@@ -6,11 +6,9 @@ on:
       - main
   pull_request:
     branches:
-      - main
+      [ main ]
     types:
-      - opened
-      - synchronize
-      - closed
+      [ opened, synchronize, closed ]
 
 env:
   SKIP: ${{ contains(join(github.event.commits.*.message, ' '), '#skip') }}
