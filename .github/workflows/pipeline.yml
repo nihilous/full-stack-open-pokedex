@@ -12,6 +12,13 @@ jobs:
   simple_deployment_pipeline:
     runs-on: ubuntu-20.04
     steps:
+      - name: Say hello
+        run: |
+          echo "Hello World!"
+      - name: Now it is
+        run: date
+      - name: Directory content
+        run: ls -l
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
