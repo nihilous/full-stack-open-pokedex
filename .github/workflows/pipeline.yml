@@ -6,13 +6,33 @@ on:
       - main
   pull_request:
     branches:
-      [ main ]
+      - main
     types:
-      [ opened, synchronize, closed ]
+      - opened
+      - synchronize
+      - closed
 
 jobs:
-  simple_deployment_pipeline:
+  set-skip-var:
     runs-on: ubuntu-20.04
+    outputs:
+      SKIP: ${{ steps.set-skip.outputs.SKIP }}
+    steps:
+      - name: Set SKIP environment variable
+        id: set-skip
+        run: |
+          echo "SKIP=${{ contains(join(github.event.commits.*.message, ' '), '#skip') }}" >> $GITHUB_ENV
+          if [[ "${{ contains(join(github.event.commits.*.message, ' '), '#skip') }}" == "true" ]]; then
+            echo "::set-output name=SKIP::true"
+          else
+            echo "::set-output name=SKIP::false"
+          fi
+
+  simple_deployment_pipeline:
+    needs: [set-skip-var]
+    runs-on: ubuntu-20.04
+    outputs:
+      SKIP: ${{ needs.set-skip-var.outputs.SKIP }}
     steps:
       - name: Say hello
         run: |
@@ -25,9 +45,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Set SKIP environment variable
-        id: set-skip
-        run: echo "SKIP=${{ contains(join(github.event.commits.*.message, ' '), '#skip') }}" >> $GITHUB_ENV
       - name: Install dependencies
         run: npm install
       - name: Lint
@@ -49,7 +66,7 @@ jobs:
           path: playwright-report/
           retention-days: 30
       - name: Deploy to Fly.io
-        if: ${{ github.event_name == 'push' && env.SKIP == 'false' }}
+        if: ${{ github.event_name == 'push' && needs.set-skip-var.outputs.SKIP == 'false' }}
         uses: superfly/flyctl-actions/setup-flyctl@master
         with:
           args: deploy --remote-only
@@ -58,7 +75,7 @@ jobs:
 
   tag_release:
     needs: [simple_deployment_pipeline]
-    if: ${{ github.event.pull_request.merged == true && env.SKIP == 'false' }}
+    if: ${{ github.event.pull_request.merged == true && needs.simple_deployment_pipeline.outputs.SKIP == 'false' }}
     runs-on: ubuntu-20.04
     permissions:
       contents: write
