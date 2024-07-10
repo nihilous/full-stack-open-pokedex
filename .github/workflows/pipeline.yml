@@ -61,7 +61,7 @@ jobs:
 
   tag_release:
     needs: [simple_deployment_pipeline]
-    if: ${{ github.event.pull_request.merged == true && needs.simple_deployment_pipeline.outputs.SKIP == 'false' }}
+    if: ${{ github.event_name == 'push' && github.event.pull_request.merged == true && needs.simple_deployment_pipeline.outputs.SKIP == 'false' }}
     runs-on: ubuntu-20.04
     permissions:
       contents: write
