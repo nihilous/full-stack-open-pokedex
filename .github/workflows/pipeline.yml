@@ -11,7 +11,7 @@ on:
       [ opened, synchronize, closed ]
 
 env:
-  SKIP: ${{ contains(join(github.event.commits.*.message, ' '), '#skip') }}
+  SKIP: ${{ toJson(github.event.commits.*.message) }}
 
 jobs:
   simple_deployment_pipeline:
@@ -51,8 +51,7 @@ jobs:
           retention-days: 30
       - uses: superfly/flyctl-actions/setup-flyctl@master
       - name: Check SKIP value before deploy
-        run:
-          echo "SKIP value is ${{ env.SKIP }}"
+        run: echo "SKIP value is ${{ env.SKIP }}"
       - name: Deploy to Fly.io
         if: ${{ github.event_name == 'push' && env.SKIP == 'false' }}
         run: flyctl deploy --remote-only
