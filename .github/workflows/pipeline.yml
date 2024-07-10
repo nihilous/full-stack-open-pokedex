@@ -6,20 +6,22 @@ on:
       - main
   pull_request:
     branches:
-      - main
+      [ main ]
     types:
-      - opened
-      - synchronize
-      - closed
+      [ opened, synchronize, closed ]
 
 jobs:
   simple_deployment_pipeline:
     runs-on: ubuntu-20.04
-    outputs:
-      SKIP: ${{ steps.set-skip.outputs.SKIP }}
     steps:
+      - name: commit messages
+        env:
+          COMMIT_MESSAGES: ${{ contains(join(github.event.commits.*.message, ' '), '#skip') }}
+        run: echo "$COMMIT_MESSAGES"
+
       - name: Say hello
-        run: echo "Hello World!"
+        run: |
+          echo "Hello World!"
       - name: Now it is
         run: date
       - name: Directory content
@@ -28,9 +30,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Set SKIP environment variable
-        id: set-skip
-        run: echo "SKIP=${{ contains(join(github.event.commits.*.message, ' '), '#skip') }}" >> $GITHUB_ENV
       - name: Install dependencies
         run: npm install
       - name: Lint
@@ -52,23 +51,19 @@ jobs:
           path: playwright-report/
           retention-days: 30
       - uses: superfly/flyctl-actions/setup-flyctl@master
-      - name: Check SKIP value before deploy
-        run: echo "SKIP value is ${{ env.SKIP }}"
       - name: Deploy to Fly.io
-        if: ${{ github.event_name == 'push' && env.SKIP == 'false' }}
+        if: ${{ github.event_name == 'push'}}
         run: flyctl deploy --remote-only
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
   tag_release:
     needs: [simple_deployment_pipeline]
-    if: ${{ github.event.pull_request.merged == true && needs.simple_deployment_pipeline.outputs.SKIP == 'false' }}
+    if: ${{ github.event.pull_request.merged == true }}
     runs-on: ubuntu-20.04
     permissions:
       contents: write
     steps:
-      - name: Check SKIP value before tag release
-        run: echo "SKIP value is ${{ needs.simple_deployment_pipeline.outputs.SKIP }}"
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.merge_commit_sha }}
