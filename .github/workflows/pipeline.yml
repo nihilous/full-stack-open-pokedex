@@ -15,10 +15,11 @@ on:
 jobs:
   simple_deployment_pipeline:
     runs-on: ubuntu-20.04
-    env:
-      SKIP: ${{ contains(join(github.event.commits.*.message, ' '), '#skip') }}
-    run: echo "$SKIP"
     steps:
+      - name: commit messages
+        env:
+          SKIP: ${{ contains(join(github.event.commits.*.message, ' '), '#skip') }}
+        run: echo "$SKIP"
       - name: Say hello
         run: |
           echo "Hello World!"
@@ -59,7 +60,7 @@ jobs:
 
   tag_release:
     needs: [simple_deployment_pipeline]
-    if: ${{ github.event.pull_request.merged == true && needs.simple_deployment_pipeline.outputs.SKIP == 'false' }}
+    if: ${{ github.event.pull_request.merged == true }}
     runs-on: ubuntu-20.04
     permissions:
       contents: write
