@@ -10,6 +10,9 @@ on:
     types:
       [ opened, synchronize, closed ]
 
+env:
+  SKIP: ${{ contains(join(github.event.commits.*.message, ' '), '#skip') }}
+
 jobs:
   simple_deployment_pipeline:
     runs-on: ubuntu-20.04
@@ -46,10 +49,10 @@ jobs:
         run: |
           if echo "${{ toJson(github.event.commits.*.message) }}" | grep -q "#skip"; then
             echo "SKIP=true" >> $GITHUB_ENV
-            echo "::set-output name=SKIP::true"
+            echo "SKIP=true" >> $GITHUB_OUTPUT
           else
             echo "SKIP=false" >> $GITHUB_ENV
-            echo "::set-output name=SKIP::false"
+            echo "SKIP=false" >> $GITHUB_OUTPUT
           fi
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
