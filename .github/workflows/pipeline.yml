@@ -10,9 +10,14 @@ on:
     types:
       [ opened, synchronize, closed ]
 
+env:
+  SKIP: ${{ contains(join(github.event.commits.*.message, ' '), '#skip') }}
+
 jobs:
   simple_deployment_pipeline:
     runs-on: ubuntu-20.04
+    outputs:
+      SKIP: ${{ env.COMMIT_MESSAGES }}
     steps:
       - name: Say hello
         run: |
@@ -26,9 +31,7 @@ jobs:
         with:
           node-version: '20'
       - name: commit messages
-        env:
-          COMMIT_MESSAGES: ${{ contains(join(github.event.commits.*.message, ' '), '#skip') }}
-        run: echo "$COMMIT_MESSAGES"
+        run: echo "$SKIP"
       - name: Install dependencies
         run: npm install
       - name: Lint
@@ -51,14 +54,14 @@ jobs:
           retention-days: 30
       - uses: superfly/flyctl-actions/setup-flyctl@master
       - name: Deploy to Fly.io
-        if: ${{ github.event_name == 'push'}}
+        if: ${{ github.event_name == 'push' && env.SKIP == 'false' }}
         run: flyctl deploy --remote-only
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
   tag_release:
     needs: [simple_deployment_pipeline]
-    if: ${{ github.event.pull_request.merged == true }}
+    if: ${{ github.event.pull_request.merged == true && needs.simple_deployment_pipeline.outputs.SKIP == 'false' }}
     runs-on: ubuntu-20.04
     permissions:
       contents: write
