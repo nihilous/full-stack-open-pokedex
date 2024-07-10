@@ -18,7 +18,7 @@ jobs:
     steps:
       - name: commit messages
         env:
-          SKIP: ${{ contains(join(github.event.commits.*.message, ' '), '#skip') }}
+          SKIP: ${{ toJson(github.event.commits.*.message) }}
         run: echo "$SKIP"
       - name: Say hello
         run: |
