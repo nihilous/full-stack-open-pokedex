@@ -51,8 +51,7 @@ jobs:
           retention-days: 30
       - uses: superfly/flyctl-actions/setup-flyctl@master
       - name: Check SKIP value before deploy
-        run:
-          echo "SKIP value is: ${{ env.SKIP }}"
+        run: echo "SKIP value is: ${{ env.SKIP }}"
       - name: Deploy to Fly.io
         if: ${{ github.event_name == 'push' && env.SKIP == 'false' }}
         run: flyctl deploy --remote-only
@@ -67,8 +66,7 @@ jobs:
       contents: write
     steps:
       - name: Check SKIP value before tag release
-        run:
-          echo "SKIP value is: ${{ needs.simple_deployment_pipeline.outputs.SKIP }}"
+        run: echo "SKIP value is: ${{ needs.simple_deployment_pipeline.outputs.SKIP }}"
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.merge_commit_sha }}
