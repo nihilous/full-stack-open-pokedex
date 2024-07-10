@@ -10,39 +10,18 @@ on:
     types:
       [ opened, synchronize, closed ]
 
-jobs:
-  fetch_commit_messages:
-    runs-on: ubuntu-20.04
-    outputs:
-      SKIP: ${{ steps.set-skip.outputs.SKIP }}
-    steps:
-      - name: Check commit messages for push
-        if: ${{ github.event_name == 'push' }}
-        id: set-skip
-        run: |
-          if echo "${{ join(github.event.commits.*.message, ' ') }}" | grep -q "#skip"; then
-            echo "::set-output name=SKIP::true"
-          else
-            echo "::set-output name=SKIP::false"
-          fi
-      - name: Check commit messages for pull request
-        if: ${{ github.event_name == 'pull_request' }}
-        id: set-skip-pr
-        run: |
-          commits=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/commits" | jq -r '.[].commit.message')
-          if echo "$commits" | grep -q "#skip"; then
-            echo "::set-output name=SKIP::true"
-          else
-            echo "::set-output name=SKIP::false"
-          fi
+env:
+  SKIP: ${{ contains(join(github.event.commits.*.message, ' '), '#skip') }}
 
+jobs:
   simple_deployment_pipeline:
     runs-on: ubuntu-20.04
-    needs: fetch_commit_messages
+    outputs:
+      SKIP: ${{ env.COMMIT_MESSAGES }}
     steps:
       - name: Say hello
-        run: echo "Hello World!"
+        run: |
+          echo "Hello World!"
       - name: Now it is
         run: date
       - name: Directory content
@@ -51,8 +30,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Check SKIP value before proceeding
-        run: echo "SKIP value is ${{ needs.fetch_commit_messages.outputs.SKIP }}"
+      - name: commit messages
+        run: echo "$SKIP"
       - name: Install dependencies
         run: npm install
       - name: Lint
@@ -75,20 +54,18 @@ jobs:
           retention-days: 30
       - uses: superfly/flyctl-actions/setup-flyctl@master
       - name: Deploy to Fly.io
-        if: ${{ github.event_name == 'push' && needs.fetch_commit_messages.outputs.SKIP == 'false' }}
+        if: ${{ github.event_name == 'push' && env.SKIP == 'false' }}
         run: flyctl deploy --remote-only
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
   tag_release:
     needs: [simple_deployment_pipeline]
-    if: ${{ github.event_name == 'push' && github.event.pull_request.merged == true && needs.fetch_commit_messages.outputs.SKIP == 'false' }}
+    if: ${{ github.event_name == 'push' && github.event.pull_request.merged == true && needs.simple_deployment_pipeline.outputs.SKIP == 'false' }}
     runs-on: ubuntu-20.04
     permissions:
       contents: write
     steps:
-      - name: Check SKIP value before tag release
-        run: echo "SKIP value is ${{ needs.fetch_commit_messages.outputs.SKIP }}"
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.merge_commit_sha }}
