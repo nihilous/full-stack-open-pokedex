@@ -44,7 +44,13 @@ jobs:
       - name: Set skip output
         id: set-skip
         run: |
-          echo "SKIP=$(if echo '${{ contains(join(github.event.commits.*.message, " "), "#skip") }}' == 'true'; then echo true; else echo false; fi)" >> $GITHUB_ENV
+          if echo "${{ toJson(github.event.commits.*.message) }}" | grep -q "#skip"; then
+            echo "SKIP=true" >> $GITHUB_ENV
+            echo "::set-output name=SKIP::true"
+          else
+            echo "SKIP=false" >> $GITHUB_ENV
+            echo "::set-output name=SKIP::false"
+          fi
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
