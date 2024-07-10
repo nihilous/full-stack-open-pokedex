@@ -10,14 +10,14 @@ on:
     types:
       [ opened, synchronize, closed ]
 
-env:
-  SKIP: ${{ toJson(github.event.commits.*.message) }}
-
 jobs:
   simple_deployment_pipeline:
     runs-on: ubuntu-20.04
+    env:
+      COMMIT_MESSAGES: ${{ toJson(github.event.commits.*.message) }}
     outputs:
-      SKIP: ${{ env.SKIP }}
+      SKIP: ${{ steps.set_skip.outputs.SKIP }}
+      COMMIT_MESSAGES: ${{ steps.set_skip.outputs.COMMIT_MESSAGES }}
     steps:
       - name: Say hello
         run: echo "Hello World!"
@@ -43,15 +43,19 @@ jobs:
         run: npx playwright install --with-deps
       - name: Run Playwright tests
         run: npm run test:e2e
-      - uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() }}
-        with:
-          name: playwright-report
-          path: playwright-report/
-          retention-days: 30
-      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - name: Set skip output
+        id: set_skip
+        run: |
+          echo "COMMIT_MESSAGES=${{ env.COMMIT_MESSAGES }}" >> $GITHUB_ENV
+          if echo "${{ env.COMMIT_MESSAGES }}" | grep -q "#skip"; then
+            echo "SKIP=true" >> $GITHUB_ENV
+          else
+            echo "SKIP=false" >> $GITHUB_ENV
+          fi
       - name: Check SKIP value before deploy
         run: echo "SKIP value is ${{ env.SKIP }}"
+      - name: Check COMMIT_MESSAGES value before deploy
+        run: echo "COMMIT_MESSAGES value is ${{ env.COMMIT_MESSAGES }}"
       - name: Deploy to Fly.io
         if: ${{ github.event_name == 'push' && env.SKIP == 'false' }}
         run: flyctl deploy --remote-only
@@ -67,6 +71,8 @@ jobs:
     steps:
       - name: Check SKIP value before tag release
         run: echo "SKIP value is ${{ needs.simple_deployment_pipeline.outputs.SKIP }}"
+      - name: Check COMMIT_MESSAGES value before tag release
+        run: echo "COMMIT_MESSAGES value is ${{ needs.simple_deployment_pipeline.outputs.COMMIT_MESSAGES }}"
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.merge_commit_sha }}
