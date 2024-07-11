@@ -42,7 +42,7 @@ jobs:
         if: ${{ failure() }}
         uses: rjstone/discord-webhook-notify@v1.0.4
         with:
-          severity: Error
+          severity: error
           color: '#FB0009'
           description: commit ${{ github.sha }} by ${{ github.actor }} broke the build :(
           text: Build failed
@@ -71,7 +71,7 @@ jobs:
         if: ${{ github.event_name == 'push' && env.SKIP == 'false' && success() }}
         uses: rjstone/discord-webhook-notify@v1.0.4
         with:
-          severity: Informational
+          severity: info
           color: '#23FF0B'
           description: to https://fs-cicd-pokedex.fly.dev/ by ${{ github.actor }}
           text: A new version of Pokedex deployed
