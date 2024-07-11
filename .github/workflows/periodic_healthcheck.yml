@@ -1,7 +1,7 @@
-name: periodic_healthcheck.yml
+name: periodic_healthcheck
 on:
   schedule:
-    - cron: '*/2 * * * *'
+    - cron: '0 1 * * *'
 
 jobs:
   ping:
