@@ -44,7 +44,7 @@ jobs:
         with:
           severity: Error
           color: '#FB0009'
-          details: commit ${{ github.sha }} by ${{ github.actor }} broke the build :(
+          description: commit ${{ github.sha }} by ${{ github.actor }} broke the build :(
           text: Build failed
           webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
       - name: Start the application
@@ -73,7 +73,7 @@ jobs:
         with:
           severity: Informational
           color: '#23FF0B'
-          details: to https://fs-cicd-pokedex.fly.dev/ by ${{ github.actor }}
+          description: to https://fs-cicd-pokedex.fly.dev/ by ${{ github.actor }}
           text: A new version of Pokedex deployed
           webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
 
