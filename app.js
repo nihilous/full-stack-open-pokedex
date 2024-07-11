@@ -12,6 +12,8 @@ app.get('/version', (req, res) => {
   res.send('17')
 })
 
+const invalid = ;
+
 app.get('/health', (req, res) => {
   res.send('ok')
 })

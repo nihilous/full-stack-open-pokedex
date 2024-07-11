@@ -38,6 +38,15 @@ jobs:
         run: npm run eslint
       - name: Build
         run: npm run build
+      - name: Notify Discord of Build Failure
+        if: ${{ failure() }}
+        uses: rjstone/discord-webhook-notify@v1.0.0
+        with:
+          severity: Error
+          color: '#FB0009'
+          details: commit ${{ github.sha }} by ${{ github.actor }} broke the build :(
+          text: Build failed
+          webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
       - name: Start the application
         run: npm run start-prod &
         env:
@@ -58,6 +67,15 @@ jobs:
         run: flyctl deploy --remote-only
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      - name: Notify Discord of Deployment Success
+        if: ${{ github.event_name == 'push' && env.SKIP == 'false' && success() }}
+        uses: rjstone/discord-webhook-notify@v1.0.0
+        with:
+          severity: Informational
+          color: '#23FF0B'
+          details: to https://fs-cicd-pokedex.fly.dev/ by ${{ github.actor }}
+          text: A new version of Pokedex deployed
+          webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
 
   tag_release:
     needs: [simple_deployment_pipeline]
