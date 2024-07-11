@@ -1,8 +1,7 @@
 name: periodic_healthcheck.yml
 on:
-  push:
-    branches:
-      - main
+  schedule:
+    - cron: '*/2 * * * *'
 
 jobs:
   ping:
